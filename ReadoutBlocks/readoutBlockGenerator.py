@@ -27,12 +27,16 @@ def automaticReadoutBlockGenerator(readoutType = readoutType, inputFilename = in
 
     ## Adding the readout block to the base sequence
     if readoutType == "cartesian":
+        print("+-+-+ Generating cartesian readout")
         output_sequence = add_cartesian_readout(base_sequence, insertion_block, previous_block, fov, resolution)
     elif readoutType == "radial":
+        print("+-+-+ Generating radial readout")
         output_sequence = add_radial_readout(base_sequence, insertion_block, previous_block, fov, resolution)
     elif readoutType == "spiral":
+        print("+-+-+ Generating spiral readout")
         output_sequence = add_spiral_readout(base_sequence, insertion_block, previous_block, fov, resolution)
     elif readoutType == "epi":
+        print("+-+-+ Generating epi readout")
         output_sequence = add_epi_readout(base_sequence, insertion_block, previous_block, fov, resolution)
 
     ## Generating the output sequence file
@@ -90,11 +94,11 @@ def manualReadoutBlockGenerator(readoutType = readoutType, inputFilename = input
 ## Res 64 TE60 TR4000 multi lines
 # inputFilename = 'C:/Users/artiga02/mtrk_designer_gui/app/mtrk_designer_api/base_sequence_multiLines_TE60_TR4000_res64.mtrk'
 
-readoutList = ["cartesian", "radial", "spiral", "epi"]
-readoutType = readoutList[2] # type of readout to add
-outputFilename = 'C:/Users/artiga02/ISMRM-2025-Surfing-School-Hands-On-Open-Source-MR/Sequences/mtrk/se2d_' + str(readoutType) + '_shortTE.mtrk'
-insertion_block = "block_spinEcho" # block name to insert
-previous_block = "block_refocusing" # previous step name
+# readoutList = ["cartesian", "radial", "spiral", "epi"]
+# readoutType = readoutList[2] # type of readout to add
+# outputFilename = 'C:/Users/artiga02/ISMRM-2025-Surfing-School-Hands-On-Open-Source-MR/Sequences/mtrk/se2d_' + str(readoutType) + '_shortTE.mtrk'
+# insertion_block = "block_spinEcho" # block name to insert
+# previous_block = "block_refocusing" # previous step name
 
 # ## Testing the automatic readout block generator
 #automaticReadoutBlockGenerator(readoutType = readoutType, inputFilename = inputFilename,

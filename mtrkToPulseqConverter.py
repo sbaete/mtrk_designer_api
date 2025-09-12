@@ -95,13 +95,14 @@ def fillSequence(sequence_data,
                                         counterRangeList = [])
 
     executeLoopingStructure(counterRangeList, 
-                            0,
+                            [],
                             variables, 
                             seq, 
                             system, 
                             loopCountersList, 
                             stepInfoList, 
-                            sequence_data)
+                            sequence_data,
+                            ctrList=[])
     
     ############################################################################
     ## Checking timing
@@ -149,13 +150,16 @@ def fillSequence(sequence_data,
 ## Functions to convert from SDL to Pulseq
 ################################################################################
 
-def executeLoopingStructure(counterRangeList, index, variables, seq, system, loopCountersList, stepInfoList, sequence_data):
+def executeLoopingStructure(counterRangeList, indexList, variables, seq, system, loopCountersList, stepInfoList, sequence_data, ctrList):
     if type(counterRangeList[0]) == int: 
         counterID = counterRangeList[0]
         counterRange = counterRangeList[1]
+        if [counterID, counterRange] not in ctrList: ctrList.append([counterID, counterRange])
         newCounterRangeList = counterRangeList[2]
+        # print("+-+-+ Executing loop on counter ", counterID, " with range ", counterRange)
         for index2 in range(0, counterRange):
-            executeLoopingStructure(newCounterRangeList, index2, variables, seq, system, loopCountersList, stepInfoList, sequence_data)
+            indexList2 = indexList + [index2]
+            executeLoopingStructure(newCounterRangeList, indexList2, variables, seq, system, loopCountersList, stepInfoList, sequence_data, ctrList)
     else:
         for counterRange in counterRangeList:
             ctrID = counterRange[0]
@@ -167,10 +171,12 @@ def executeLoopingStructure(counterRangeList, index, variables, seq, system, loo
                                               seq = seq, 
                                               variables = variables,
                                               loopCountersList = loopCountersList)
+                # print("+-+-+ Building Pulseq sequence for action index ", index)
                 buildPulseqSequence(seq = seq,
-                                actionIndex = index, 
+                                indexList = indexList, 
                                 actionList = actionList, 
-                                stepInfoList = stepInfoList)
+                                stepInfoList = stepInfoList,
+                                ctrList = ctrList)
 
 
 def extractStepInformation(sequence_data, currentBlock, system, 
@@ -414,8 +420,8 @@ def extractStepInformation(sequence_data, currentBlock, system,
                      rfSpoilingInc, eventIndexBlockList]
     return stepInfoList
 
-def buildPulseqSequenceBlocks(index, seq, stepInfoList, normalizedWaveforms, 
-                              rf_inc, rf_phase):
+def buildPulseqSequenceBlocks(indexList, seq, stepInfoList, normalizedWaveforms, 
+                              rf_inc, rf_phase, ctrList):
     """
     Builds Pulseq sequence blocks based on the given parameters.
 
@@ -437,17 +443,25 @@ def buildPulseqSequenceBlocks(index, seq, stepInfoList, normalizedWaveforms,
         if stepInfoList[3] != []:
             for variableAmplitudeEventIndex in range(0, len(stepInfoList[3])):
                 equationString = stepInfoList[2][variableAmplitudeEventIndex]
+                # print("+-+-+ Evaluating equation: ", equationString)
+                # print("     with counter values: ", ctrList)
                 counterNumberFound = False
                 stringCounterIndex = 0
                 while counterNumberFound == False:
+                    # print("+-+-+ Searching for counter ", stringCounterIndex)
                     if "ctr(" + str(stringCounterIndex) + ")" in \
                                                                  equationString:
                         stringToReplace = \
                                      str("ctr(" + str(stringCounterIndex) + ")")
                         counterNumberFound = True
                     stringCounterIndex += 1
+                # print("+-+-+ Replacing ", stringToReplace)
+                # print("+-+-+ index: ", indexList)
+                # print("+-+-+ stringToReplace: ", stringToReplace)
+                # print("+-+-+ replacement value: ", indexList[stringCounterIndex-2])
+                index = indexList[stringCounterIndex-2]
                 equationString = equationString.replace(stringToReplace,
-                                                        "index")
+                                                            "index")
                 equationString = equationString.replace("cos",
                                                         "np.cos")
                 equationString = equationString.replace("sin",
@@ -601,7 +615,7 @@ def organizePulseqBlocks(sequence_data, counterRangeList, system, variables, seq
 
     return actionList
 
-def buildPulseqSequence(seq, actionIndex, actionList, stepInfoList):
+def buildPulseqSequence(seq, indexList, actionList, stepInfoList, ctrList):
     """
     Builds a Pulseq sequence based on the given parameters.
 
@@ -618,12 +632,13 @@ def buildPulseqSequence(seq, actionIndex, actionList, stepInfoList):
         rf_phase = 0
         rf_inc = 0
         stepInfoList, rf_inc, rf_phase = buildPulseqSequenceBlocks(
-            index = actionIndex, #index, 
+            indexList = indexList, #index, 
             seq = seq, 
             stepInfoList = actionList[0][1], 
             normalizedWaveforms = actionList[0][2], 
             rf_inc = rf_inc, 
-            rf_phase = rf_phase)
+            rf_phase = rf_phase,
+            ctrList = ctrList)
             
 ################################################################################
 ## Converting the file from mtrk to Pulseq format using command line for input

@@ -376,6 +376,7 @@ def cartesian(fov, n, dt, gamp, gslew, dirx=-1, diry=1):
     References:
         Adapted fron EPI version. 
     """
+    part_num = 64 # for 3D
     s = gslew * dt * 1000
     scaley = 20 # original value 20
 
@@ -419,12 +420,26 @@ def cartesian(fov, n, dt, gamp, gslew, dirx=-1, diry=1):
 
     gyprew = diry * trap_grad(areayprew, gamp, gslew  * 1000, dt)[0]
     gyprew = np.concatenate((np.zeros((1, gyprew.size % 2)), gyprew), axis=1)
+
     gxro = -dirx * gxro
 
     # add rephasers at end of gx and gy readout
     areagy = -areayprew  # units = G/cm*s
     gyrep = trap_grad(areagy, gamp, gslew * 1000, dt)[0]
     # gy = np.concatenate((gy, gyrep), axis=1)
+
+    ##for 3D
+    # partition-encode trapezoids
+    gslab = g * np.ones((1, part_num))  # test for 5 slabs
+    areapdz = np.sum(gslab) * dt
+    if part_num % 2 == 0:
+        areazprew = areapdz / 2 - g * dt
+    else:
+        areazprew = (areapdz - g * dt) / 2 - g * dt
+    gzprew = diry * trap_grad(areazprew, gamp, gslew  * 1000, dt)[0]
+    gzprew = np.concatenate((np.zeros((1, gzprew.size % 2)), gzprew), axis=1)
+    ##for 3D
+    
 
     areagx = area
     gxrep = trap_grad(-areagx, gamp, gslew * 1000, dt)[0]
@@ -435,18 +450,29 @@ def cartesian(fov, n, dt, gamp, gslew, dirx=-1, diry=1):
         sign = -1
     gyprew_max_ampl = max(abs(gyprew[0]))
     step = gyprew_max_ampl / n
-    gyprew_equation = str(sign) + "*(" + str(gyprew_max_ampl) + "-" + str(2*step) +"*counter)"
+    gyprew_equation = str(sign) + "*(" + str(gyprew_max_ampl) + "-" + str(2*step) +"*counter3)"
 
     sign = 1
     if areagy<0:
         sign = -1
     gyrep_max_ampl = max(abs(gyrep[0]))
     step = gyprew_max_ampl / n
-    gyrep_equation = str(sign) + "*(" + str(gyrep_max_ampl) + "-" + str(2*step) +"*counter)"
+    gyrep_equation = str(sign) + "*(" + str(gyrep_max_ampl) + "-" + str(2*step) +"*counter3)"
+
+    ##for 3D
+    # Prepare dynamic partition encoding
+    signz = 1
+    if areazprew<0:
+        signz = -1
+    gzprew_max_ampl = max(abs(gzprew[0]))
+    stepz = gzprew_max_ampl / part_num # for part_num slabs
+    gzprew_equation = str(signz) + "*(" + str(gzprew_max_ampl) + "-" + str(2*stepz) +"*counter2)"
+    ##for 3D
     
     # prepare blocks for mtrk
     gxprew_startTime = 0
     gyprew_startTime = 0
+    gzprew_startTime = 0 ##for 3D
     gxro_startTime = max(gxprew.size, gyprew.size) * 10e-5
     adc1_startTime = gxro_startTime + (ramp.size + 1) * 10e-5 # 
     # gxrep_startTime = gxro_startTime + ( gxro.size * 10e-5 ) 
@@ -463,6 +489,11 @@ def cartesian(fov, n, dt, gamp, gslew, dirx=-1, diry=1):
                "phase", 
                gyprew_equation, 
                gyprew_startTime],
+              [gzprew[0]/max(gzprew[0], key=abs),  ##for 3D
+               gzprew.size,
+               "slice", 
+               gzprew_equation, 
+               gzprew_startTime],
               [gxro[0]/max(gxro[0], key=abs), 
                gxro.size,
                "read", 
@@ -559,13 +590,13 @@ def radial(fov, n_spokes, theta, dt, gamp, gslew):
     if areapd<0:
         sign = -1
     ro_max_ampl = max(abs(ro[0]))
-    gxro_equation = str(sign) + "*" + str(ro_max_ampl) + "*cos(counter*" + str(theta) +")"
-    gyro_equation = str(sign) + "*" + str(ro_max_ampl) + "*sin(counter*" + str(theta) +")"
+    gxro_equation = str(sign) + "*" + str(ro_max_ampl) + "*cos(counter3*" + str(theta) +")"
+    gyro_equation = str(sign) + "*" + str(ro_max_ampl) + "*sin(counter3*" + str(theta) +")"
 
 
     prew_max_ampl = max(abs(prew[0]))
-    gxprew_equation = str(-sign) + "*" + str(prew_max_ampl) + "*cos(counter*" + str(theta) +")"
-    gyprew_equation = str(-sign) + "*" + str(prew_max_ampl) + "*sin(counter*" + str(theta) +")"
+    gxprew_equation = str(-sign) + "*" + str(prew_max_ampl) + "*cos(counter3*" + str(theta) +")"
+    gyprew_equation = str(-sign) + "*" + str(prew_max_ampl) + "*sin(counter3*" + str(theta) +")"
     
     # prepare blocks for mtrk
     gxprew_startTime = 0
