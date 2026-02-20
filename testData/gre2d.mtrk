@@ -268,7 +268,7 @@
     },
     "equations": {
         "phaseencoding": {
-            "equation": "0.3555*(ctr(1)-64.5)"
+            "equation": "0.3555*(ctr(2)-64.5)"
         }
     }
 }

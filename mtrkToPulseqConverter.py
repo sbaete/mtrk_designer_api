@@ -151,6 +151,15 @@ def fillSequence(sequence_data,
 ################################################################################
 
 def executeLoopingStructure(counterRangeList, indexList, variables, seq, system, loopCountersList, stepInfoList, sequence_data, ctrList):
+    # Leaf block (block name string): build sequence directly
+    if isinstance(counterRangeList, str):
+        actionList = organizePulseqBlocks(sequence_data=sequence_data,
+                                         counterRangeList=[[999, 1, counterRangeList]],
+                                         system=system, seq=seq, variables=variables,
+                                         loopCountersList=loopCountersList)
+        buildPulseqSequence(seq=seq, indexList=indexList, actionList=actionList,
+                           stepInfoList=stepInfoList, ctrList=ctrList)
+        return
     if type(counterRangeList[0]) == int: 
         counterID = counterRangeList[0]
         counterRange = counterRangeList[1]
@@ -171,9 +180,9 @@ def executeLoopingStructure(counterRangeList, indexList, variables, seq, system,
                                               seq = seq, 
                                               variables = variables,
                                               loopCountersList = loopCountersList)
-                # print("+-+-+ Building Pulseq sequence for action index ", index)
+                indexList3 = indexList + [index3]
                 buildPulseqSequence(seq = seq,
-                                indexList = indexList, 
+                                indexList = indexList3, 
                                 actionList = actionList, 
                                 stepInfoList = stepInfoList,
                                 ctrList = ctrList)
@@ -341,11 +350,19 @@ def extractStepInformation(sequence_data, currentBlock, system,
             case "adc":
                 adc_delay = delay
                 adcSamples = currentObject.samples * os_factor
+                step_phase = None
+                if "phase" in dict(currentBlock.steps[stepIndex]):
+                    step_phase = currentBlock.steps[stepIndex].phase
+                    if step_phase != "" and step_phase is not None:
+                        step_phase = float(step_phase)
                 adcEvent = pypulseq.make_adc(
                                         num_samples = adcSamples, 
                                         duration = currentObject.duration*1e-6, 
                                         delay = adc_delay*1e-6, 
                                         system = system)
+                if step_phase is not None:
+                    adcEvent.phase_offset = step_phase
+                    adcEvent.phase_from_step = True
                 eventList.append(adcEvent)
                 if rfSpoilingFlag == True:
                     rfSpoilingList.append(eventList.index(adcEvent))
@@ -486,8 +503,9 @@ def buildPulseqSequenceBlocks(indexList, seq, stepInfoList, normalizedWaveforms,
                 stepInfoList[0][blockList[blockIndex]].phase_offset = \
                                                        rf_phase / 180 * np.pi
             elif stepInfoList[0][blockList[blockIndex]].type == "adc":
-                stepInfoList[0][blockList[blockIndex]].phase_offset = \
-                                                       rf_phase / 180 * np.pi
+                adcEvent = stepInfoList[0][blockList[blockIndex]]
+                if not getattr(adcEvent, "phase_from_step", False):
+                    adcEvent.phase_offset = rf_phase / 180 * np.pi
             ## Doing this only for spiral??
             elif stepInfoList[0][blockList[blockIndex]].type == "grad":
                 seq.system.max_slew = seq.system.max_slew * 1e3
@@ -533,8 +551,9 @@ def extractSequenceStructure(stepInfoList, counterRange, blockName, counterRange
                 structureList.append([counterID, counterRange, []])
         # Next block
         elif infoList[0] == "run_block":
-            ## Ignore block with no events
-            if type(infoList[2][0][0]) == list:
+            ## Navigate into block; check first event (may be list or pypulseq object)
+            firstEv = infoList[2][0][0] if infoList[2][0] else None
+            if isinstance(firstEv, list):
                 previousInfoList = infoList
                 infoList = infoList[2][0][0]
             ## Use block with events
@@ -544,11 +563,23 @@ def extractSequenceStructure(stepInfoList, counterRange, blockName, counterRange
                     previousInfoList = ["run_block", previousInfoList[1], previousInfoList[3]]
                 for infoIndex in range(0, len(previousInfoList[2][0])):
                     blockInfoList = previousInfoList[2][0][infoIndex]
+                    # Loop events: ["loop", counterID, range, stepInfoList]; add [counterID, range, innerBlock]
+                    if blockInfoList[0] == "loop":
+                        loopStepInfo = blockInfoList[3]
+                        innerFirstEvent = loopStepInfo[0][0] if loopStepInfo[0] else None
+                        if isinstance(innerFirstEvent, list) and innerFirstEvent[0] == "run_block":
+                            innerBlockName = innerFirstEvent[1]
+                            subList.append([blockInfoList[1], blockInfoList[2], innerBlockName])
+                        continue
                     blockName = blockInfoList[1]
-                    if type(blockInfoList[2][0][0]) == list:
+                    # blockInfoList[2] is stepInfoList for run_block; [0][0] is first event
+                    firstEvent = blockInfoList[2][0][0] if len(blockInfoList[2][0]) > 0 else None
+                    if isinstance(firstEvent, list):
                         subBlockList = []
-                        for infoIndex in range(0, len(blockInfoList[2][0])):
-                            subBlockInfoList = blockInfoList[2][0][infoIndex]
+                        for subIdx in range(0, len(blockInfoList[2][0])):
+                            subBlockInfoList = blockInfoList[2][0][subIdx]
+                            if subBlockInfoList[0] == "loop":
+                                continue
                             subBlockName = subBlockInfoList[1]
                             if type(subBlockInfoList[1]) == int:
                                 subList.append([subBlockInfoList[1], subBlockInfoList[2], subBlockInfoList[3][0][0][1]])
