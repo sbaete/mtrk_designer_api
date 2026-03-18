@@ -443,8 +443,8 @@ def buildPulseqSequenceBlocks(indexList, seq, stepInfoList, normalizedWaveforms,
         if stepInfoList[3] != []:
             for variableAmplitudeEventIndex in range(0, len(stepInfoList[3])):
                 equationString = stepInfoList[2][variableAmplitudeEventIndex]
-                # print("+-+-+ Evaluating equation: ", equationString)
-                # print("     with counter values: ", ctrList)
+                #print("+-+-+ Evaluating equation: ", equationString)
+                #print("     with counter values: ", ctrList)
                 counterNumberFound = False
                 stringCounterIndex = 0
                 while counterNumberFound == False:
@@ -455,10 +455,10 @@ def buildPulseqSequenceBlocks(indexList, seq, stepInfoList, normalizedWaveforms,
                                      str("ctr(" + str(stringCounterIndex) + ")")
                         counterNumberFound = True
                     stringCounterIndex += 1
-                # print("+-+-+ Replacing ", stringToReplace)
-                # print("+-+-+ index: ", indexList)
-                # print("+-+-+ stringToReplace: ", stringToReplace)
-                # print("+-+-+ replacement value: ", indexList[stringCounterIndex-2])
+                #print("+-+-+ Replacing ", stringToReplace)
+                #print("+-+-+ index: ", indexList)
+                #print("+-+-+ stringToReplace: ", stringToReplace)
+                #print("+-+-+ replacement value: ", indexList[stringCounterIndex-2])
                 index = indexList[stringCounterIndex-2]
                 equationString = equationString.replace(stringToReplace,
                                                             "index")

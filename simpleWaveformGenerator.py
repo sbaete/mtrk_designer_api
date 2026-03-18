@@ -104,9 +104,9 @@ def min_trap_grad(area, gmax, slew, dt):
     print("plateau points", (len(normalized_trap) - 2 * ramppts))
     print("amplitude", amplitude)
 
-    ramp_up_time = ramppts * dt * 1e6  # convert to us
-    ramp_down_time = ramppts * dt * 1e6  # convert to us
-    plateau_time = (len(normalized_trap) - 2 * ramppts) * dt * 1e6  # convert to us
+    ramp_up_time = ramppts * dt * 1e6  # convert to 1e-6 us
+    ramp_down_time = ramppts * dt * 1e6  # convert to 1e-6 us
+    plateau_time = (len(normalized_trap) - 2 * ramppts) * dt * 1e6  # convert to 1e-6 us
 
     return np.expand_dims(normalized_trap, axis=0), amplitude, int(ramp_up_time), int(ramp_down_time), int(plateau_time)
 
@@ -132,7 +132,7 @@ def ramp_sampled_trap_grad(area, gmax, slew, dt, *args):
 
     """
 
-    slew = slew * 1e3  # convert slew rate to mT/m/s
+    slew = slew * 1e-3  # convert slew rate to mT/m/s
 
     if len(args) < 5:
         # in case we are making a rewinder

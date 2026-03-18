@@ -16,15 +16,17 @@ def findMarkStep(base_sequence, blockName):
     return mark_step
 
 
-def add_cartesian_readout(base_sequence, insertion_block, previous_block, fov, resolution):
+def add_cartesian_readout(base_sequence, insertion_block, previous_block, next_block, fov, resolution):
     dt = 1e-5  # hardware dwell time [s]
     gamp = 20 # max gradient amplitude in mT/m
     gslew = 45 # max slew rate in mT/m/ms
-    dirx = -1 # x direction of EPI -1 left to right, 1 right to left # Blocked to -1?
-    diry = -1 # y direction of EPI -1 bottom-top, 1 top-bottom
-
+    dirx = -1 # x direction, -1 left to right, 1 right to left # Blocked to -1?
+    diry = -1 # y direction, -1 posterior-anterior, 1 anterior-posterior
+    dirz = -1 # z direction, -1 feet-head, 1 head-feet, for 3D
+    
     ## Generating cartesian trajectory
-    blocks, time_before_center = rwg.cartesian(fov, resolution, dt, gamp, gslew, dirx, diry)
+    blocks, time_before_center, time_after_center = rwg.cartesian(fov, resolution, dt, gamp, gslew, 
+                                               base_sequence.infos, dirx, diry, dirz)
     
     ## Ensuring TE is properly set
     # print("time_before_center ", time_before_center)
@@ -32,6 +34,12 @@ def add_cartesian_readout(base_sequence, insertion_block, previous_block, fov, r
         base_sequence.equations[base_sequence.instructions[previous_block].steps[findMarkStep(base_sequence, previous_block)].time.equation].equation += str(-int(time_before_center*1e2)*10)
     else:
         base_sequence.instructions[previous_block].steps[findMarkStep(base_sequence, previous_block)].time -= int(time_before_center*1e2)*10
+    
+    ## Ensuring TR is properly set
+    if(type(base_sequence.instructions[next_block].steps[findMarkStep(base_sequence, next_block)].time) == EquationRef):
+        base_sequence.equations[base_sequence.instructions[next_block].steps[findMarkStep(base_sequence, next_block)].time.equation].equation += str(-int(time_after_center*1e2)*10)
+    else:
+        base_sequence.instructions[next_block].steps[findMarkStep(base_sequence, next_block)].time -= int(time_after_center*1e2)*10
 
     ## Finding insertion block
     for instruction in base_sequence.instructions.keys():
@@ -125,8 +133,11 @@ def add_cartesian_readout(base_sequence, insertion_block, previous_block, fov, r
                 variableAmplitude = EquationRef(type = "equation",
                                               equation = equationName)
                 base_sequence.equations.update({equationName : {}})
-                equation = blocks[block_index][index][3].replace("counter2", "ctr(2)") ## TO DO make counter variable
-                equation = blocks[block_index][index][3].replace("counter3", "ctr(3)") ## TO DO make counter variable
+                if base_sequence.infos.is3D:
+                    equation = blocks[block_index][index][3].replace("counter3D", "ctr(2)") ## TO DO make counter variable
+                    equation = blocks[block_index][index][3].replace("counterPE", "ctr(3)") ## TO DO make counter variable
+                else:
+                    equation = blocks[block_index][index][3].replace("counterPE", "ctr(2)") ## TO DO make counter variable
                 base_sequence.equations[equationName].update({"equation" : equation})
                 gradient = GradWithAmplitude(axis = blocks[block_index][index][2], 
                                              object = object_name, 

@@ -48,6 +48,8 @@ def se2d_generator():
         description="Spin Echo 2D Sequence",
         slices=1,
         fov=260,
+        dz=5,
+        is3D=False,
         pelines=128,
         seqstring="YARRA",
         reconstruction="%SiemensIceProgs%\\IceProgram2D")
@@ -68,7 +70,7 @@ def se2d_generator():
     gamma = 42.576e6  # Hz/T
     time_bw_product = 2.7
     BW = time_bw_product/(2560e-6)  # RF bandwidth in Hz
-    dz = 0.005  # slice thickness in meters
+    dz = sequence_data.infos.dz * 1e-3 # slice thickness in meters
     G_slice = BW / (gamma * dz)  # in T/m
     grad_slisel_amplitude = round(G_slice * 1e3, 2)  # convert to mT/m
 
@@ -79,12 +81,12 @@ def se2d_generator():
 
     # Generating slice refocusing gradient
     slice_selection_half_area = (((ramp + plateau))/2)*grad_slisel_amplitude
-    grad_sliref_waveform, grad_sliref_amplitude, ru_us, rd_us, pt_us = min_trap_grad(slice_selection_half_area, 22, 45, dt)
+    grad_sliref_waveform, grad_sliref_amplitude, ru_us, rd_us, pt_us = ramp_sampled_trap_grad(slice_selection_half_area, 22, 45, dt)
 
     # Generating crusher gradients
     dephasing = 10 * np.pi
     crusher_gradient_area = (dephasing*1e3) / (2*np.pi*gamma*1e-6 * 5e-3)  # in mT/m/s
-    grad_crush_waveform, grad_crush_amplitude, ru_us, rd_us, pt_us = min_trap_grad(crusher_gradient_area, 22, 45, dt)
+    grad_crush_waveform, grad_crush_amplitude, ru_us, rd_us, pt_us = ramp_sampled_trap_grad(crusher_gradient_area, 22, 45, dt)
     for i, value in enumerate(grad_crush_waveform[0]):
         grad_crush_waveform[0][i] = np.round(value, 4)  # rounding to 4 decimal places for mT/m
 
@@ -178,8 +180,12 @@ def se2d_generator():
     
     # Event
     equation_ref_slice_ref_gradient_event = EquationRef(type = "equation",
-                                                         equation = "equation_slice_ref_gradient_event")
-    equation_slice_ref_gradient_event = Equation(equation = "set(TE)/2 - " + str(grad_slice_select_refocus.duration/2))
+                        equation = "equation_slice_ref_gradient_event")
+    equation_slice_ref_gradient_event = Equation(equation = "set(TE)/2" + \
+                        " - " + str(grad_slice_select_refocus.duration/2) + \
+                        " + " + str(rfpulse.duration/2) + \
+                        " + " + str(rf_event.time))
+        
     slice_ref_gradient_event = Grad(
         axis="slice",
         object="grad_slice_select_refocus",
@@ -202,9 +208,13 @@ def se2d_generator():
     
     # Events
     equation_ref_crusher_gradient_event_s1 = EquationRef(type = "equation",
-                                                     equation = "equation_crusher_gradient_event_s1")
-    equation_crusher_gradient_event_s1 = Equation(equation = "set(TE)/2 - " + str(grad_slice_select_refocus.duration/2 + grad_crusher.duration) + " - 20")
-    start_time_crusher_gradient_event_s1 = TE/2 - (grad_slice_select_refocus.duration/2 + grad_crusher.duration) - 20
+                        equation = "equation_crusher_gradient_event_s1")
+    equation_crusher_gradient_event_s1 = Equation(equation = "set(TE)/2" + \
+                        " - " + str(grad_slice_select_refocus.duration/2 + grad_crusher.duration) + \
+                        " + " + str(rfpulse.duration/2) + \
+                        " + " + str(rf_event.time))
+    
+    #start_time_crusher_gradient_event_s1 = TE/2 - (grad_slice_select_refocus.duration/2 + grad_crusher.duration) - 20
     crusher_gradient_event_s1 = Grad(
         axis="slice",
         object="grad_crusher",
@@ -237,8 +247,11 @@ def se2d_generator():
 
     # Event 
     equation_ref_rf_ref_event= EquationRef(type = "equation",
-                                           equation = "equation_rf_ref_event")
-    equation_rf_ref_event = Equation(equation = "set(TE)/2 - " + str(rfpulse_refocusing.duration/2) + " + 20")   
+                        equation = "equation_rf_ref_event") 
+    equation_rf_ref_event = Equation(equation = "set(TE)/2" + \
+                        " - " + str(rfpulse_refocusing.duration/2) + \
+                        " + " + str(rfpulse.duration/2) + \
+                        " + " + str(rf_event.time))
     rf_ref_event = Rf(
         object="rf_refocusing",
         time=equation_ref_rf_ref_event,
@@ -249,8 +262,11 @@ def se2d_generator():
     # Defining the crusher gradients
     # Events
     equation_ref_crusher_gradient_event_s2 = EquationRef(type = "equation",
-                                                         equation = "equation_crusher_gradient_event_s2")
-    equation_crusher_gradient_event_s2 = Equation(equation = "set(TE)/2 + " + str(grad_slice_select_refocus.duration/2) + " + 20")
+                       equation = "equation_crusher_gradient_event_s2")
+    equation_crusher_gradient_event_s2 = Equation(equation = "set(TE)/2" + \
+                       " + " + str(grad_slice_select_refocus.duration/2) + \
+                       " + " + str(rfpulse.duration/2) + \
+                       " + " + str(rf_event.time))
     crusher_gradient_event_s2 = Grad(
         axis="slice",
         object="grad_crusher",
@@ -266,9 +282,11 @@ def se2d_generator():
 
     # Defining the echo time (TE) event
     equation_ref_te_event = EquationRef(type = "equation",
-                                                         equation = "equation_te_event")
-    equation_te_event = Equation(equation = "set(TE) + " + str(grad_slice_select.duration/2))
-    te_event = Mark(time=equation_ref_te_event )
+                        equation = "equation_te_event")
+    equation_te_event = Equation(equation = "set(TE) " \
+                        " + " + str(rfpulse.duration/2) + \
+                        " + " + str(rf_event.time))
+    te_event = Mark(time=equation_ref_te_event)
     
     
     # Defining the spoiler gradient
@@ -288,8 +306,13 @@ def se2d_generator():
 
     
     # Defining the repetition time (TR) event
-    print("test " + str(TR - start_time_crusher_gradient_event_s1 - grad_crusher.duration))
-    tr_event = Mark(time=TR - start_time_crusher_gradient_event_s1 - grad_crusher.duration)
+    #print("test " + str(TR - start_time_crusher_gradient_event_s1 - grad_crusher.duration))
+    equation_ref_tr_event = EquationRef(type = "equation",
+                        equation = "equation_tr_event")
+    equation_tr_event = Equation(equation = "set(TR) - set(TE) " \
+                        " - " + str(rfpulse.duration/2) + \
+                        " - " + str(rf_event.time))
+    tr_event = Mark(time=equation_ref_tr_event ) # - start_time_crusher_gradient_event_s1 - grad_crusher.duration)
     
 
     ## Adding objects to the sequence data
@@ -408,6 +431,7 @@ def se2d_generator():
         "equation_crusher_gradient_event_s1": equation_crusher_gradient_event_s1,
         "equation_crusher_gradient_event_s2": equation_crusher_gradient_event_s2,
         "equation_te_event": equation_te_event,
+        "equation_tr_event": equation_tr_event,
         "equation_rf_ref_event": equation_rf_ref_event,
         "equation_slice_ref_gradient_event": equation_slice_ref_gradient_event
     })
@@ -416,6 +440,7 @@ def se2d_generator():
     add_cartesian_readout(sequence_data, 
                           "block_TR", 
                           "block_SE", 
+                          "block_spoiler", 
                           sequence_data.infos.fov * 1e-2,
                           sequence_data.infos.pelines)
 

@@ -50,7 +50,9 @@ class Settings(BaseModel):
 class Info(BaseModel):
     description: str = "default_description"
     slices: int = 9999
-    fov: int = 9999
+    fov: int = 9999 # in [mm]
+    dz: int = 5 # slice thickness in mm
+    is3D: bool = False
     pelines: int = 9999
     seqstring: str = "default_seqstring"
     reconstruction: str = "default_reconstruction"
