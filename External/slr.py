@@ -195,7 +195,7 @@ def dzlp(n=64, tb=4, d1=0.01, d2=0.01):
 
 
 def msinc(n=64, m=1):
-    x = np.arange(-n / 2, n / 2, 1) / (n / 2)
+    x = (np.arange(-n / 2, n / 2, 1) + 0.5) / (n / 2)  # SB, center rf-pulse for timing
     snc = np.divide(np.sin(m * 2 * np.pi * x + 0.00001), (m * 2 * np.pi * x + 0.00001))
     ms = np.multiply(snc, 0.54 + 0.46 * np.cos(np.pi * x))
     ms = ms * 4 * m / n

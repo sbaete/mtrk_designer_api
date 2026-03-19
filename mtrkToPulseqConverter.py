@@ -649,4 +649,7 @@ def buildPulseqSequence(seq, indexList, actionList, stepInfoList, ctrList):
 # print("Pulseq file to create: ")
 # outputFile = input()
 
-# mtrkToPulseqConverter(fileToConvert, outputFile)
+fileToConvert = "se2d.mtrk"
+outputFile = "se2d.seq"
+
+mtrkToPulseqConverter(fileToConvert, outputFile)
