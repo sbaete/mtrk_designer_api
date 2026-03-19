@@ -354,7 +354,7 @@ def cartesian(fov, n, dt, gamp, gslew, infos, dirx=-1, diry=1, dirz=1):
     r"""Basic cartesian single-line readout designer.
 
     Args:
-        fov (float): imaging field of view in cm.
+        fov (float): imaging field of view in mm.
         n (int): # of pixels (square). resolution??
         etl (int): echo train length.
         dt (float): sample time in s.
@@ -384,8 +384,8 @@ def cartesian(fov, n, dt, gamp, gslew, infos, dirx=-1, diry=1, dirz=1):
 
 
     # make the various gradient waveforms
-    gamma = 4.2575  # kHz/Gauss
-    g = (1 / (1000 * dt)) / (gamma * fov)  # Gauss/cm
+    gamma = 42.577e6  # Hz/T
+    g = (1 / (dt)) / (gamma * fov * 1e-3 ) * 1e3 # mT/m
     if g > gamp:
         g = gamp
         print("max g reduced to {}".format(g))
@@ -396,74 +396,59 @@ def cartesian(fov, n, dt, gamp, gslew, infos, dirx=-1, diry=1, dirz=1):
     areapd = np.sum(gxro) * dt
 
     ramp = np.expand_dims(np.linspace(0, g, int(np.ceil(g / s))+1), axis=0)
-    gxro = np.concatenate((ramp, gxro, np.fliplr(ramp)),axis=1)
+    gxro = dirx * np.concatenate((ramp, gxro, np.fliplr(ramp)),axis=1)
 
     # x prewinder. make sure res_kpre is even. Handle even N by changing prew.
     if n % 2 == 0:
         area = (np.sum(gxro) - dirx * g) * dt
     else:
         area = np.sum(gxro) * dt
-    gxprew = dirx * trap_grad(area / 2, gamp, gslew * 1000, dt)[0]
+    gxprew = trap_grad(area / 2, gamp, gslew * 1000, dt)[0]
 
-    gxprew = np.concatenate(
+    gxprew = -1 * dirx * np.concatenate(
         (np.zeros((1, (gxprew.size + ramp.size) % 2)), gxprew), axis=1
     )
+    
+    #areagx = area
+    #gxrep = dirx * trap_grad(-areagx, gamp, gslew * 1000, dt)[0]
 
     # phase-encode trapezoids before/after gx
     # handle even N by changing prewinder
-    if n % 2 == 0:
-        areayprew = areapd / 2 - g * dt
-    else:
-        areayprew = (areapd - g * dt) / 2 - g * dt
+    areayprew = 1/2 * (n-1) / (gamma * fov * 1e-3 ) *1e3 # in mT/m*s
 
     gyprew = diry * trap_grad(areayprew, gamp, gslew  * 1000, dt)[0]
     gyprew = np.concatenate((np.zeros((1, gyprew.size % 2)), gyprew), axis=1)
 
     # add rephasers at end of gx and gy readout
-    areagy = -areayprew  # units = G/cm*s
-    gyrep = trap_grad(areagy, gamp, gslew * 1000, dt)[0]
-    # gy = np.concatenate((gy, gyrep), axis=1)
+    areayrew = -1 * diry * areayprew  # units = G/cm*s
+    gyrep = trap_grad(areayrew, gamp, gslew * 1000, dt)[0]
 
     ##for 3D
     if is3D:
-        # partition-encode trapezoids
-        gslab = g * np.ones((1, infos.slices))  # test for 5 slabs
-        areapdz = np.sum(gslab) * dt
-        if infos.slices % 2 == 0:
-            areazprew = areapdz / 2 - g * dt
-        else:
-            areazprew = (areapdz - g * dt) / 2 - g * dt
+        # slice direction 3D encode trapezoids
+        fovz = infos.slices * infos.dz
+        areazprew = 1/2 * (infos.slices-1) / (gamma * fovz * 1e-3 ) *1e3 # in mT/m*s
         gzprew = dirz * trap_grad(areazprew, gamp, gslew  * 1000, dt)[0]
-        gzprew = np.concatenate((np.zeros((1, gzprew.size % 2)), gzprew), axis=1)
+        gzprew = dirz * np.concatenate((np.zeros((1, gzprew.size % 2)), gzprew), axis=1)
+        
+        # add rephasers at end of gx and gy readout
+        areazrew = -1 * dirz * areazprew  # units = G/cm*s
+        gzrep = trap_grad(areazrew, gamp, gslew * 1000, dt)[0]
     ##for 3D
-    
-    areagx = area
-    gxrep = trap_grad(-areagx, gamp, gslew * 1000, dt)[0]
 
     ## Prepare dynamic phase encoding
-    sign = 1
-    if areayprew<0:
-        sign = -1
     gyprew_max_ampl = max(abs(gyprew[0]))
     step = gyprew_max_ampl / n
-    gyprew_equation = str(sign) + "*(" + str(gyprew_max_ampl) + "-" + str(2*step) +"*counterPE)"
-
-    sign = 1
-    if areagy<0:
-        sign = -1
-    gyrep_max_ampl = max(abs(gyrep[0]))
-    step = gyprew_max_ampl / n
-    gyrep_equation = str(sign) + "*(" + str(gyrep_max_ampl) + "-" + str(2*step) +"*counterPE)"
+    gyprew_equation = str(diry) + "*(" + str(gyprew_max_ampl) + "-" + str(2*step) +"*counterPE)"
+    gyrep_equation = "-1*" + str(diry) + "*(" + str(gyprew_max_ampl) + "-" + str(2*step) +"*counterPE)"
 
     ##for 3D
     if is3D:
         # Prepare dynamic partition encoding
-        signz = 1
-        if areazprew<0:
-            signz = -1
         gzprew_max_ampl = max(abs(gzprew[0]))
-        stepz = gzprew_max_ampl / infos.slices # for part_num slabs
-        gzprew_equation = str(signz) + "*(" + str(gzprew_max_ampl) + "-" + str(2*stepz) +"*counter3D)"
+        stepz = gzprew_max_ampl / infos.slices # for slabs
+        gzprew_equation = str(dirz) + "*(" + str(gzprew_max_ampl) + "-" + str(2*stepz) +"*counter3D)"
+        gzrep_equation = "-1*" + str(dirz) + "*(" + str(gzprew_max_ampl) + "-" + str(2*stepz) +"*counter3D)"
     ##for 3D
     
     # prepare blocks for mtrk
@@ -512,6 +497,11 @@ def cartesian(fov, n, dt, gamp, gslew, infos, dirx=-1, diry=1, dirz=1):
                "slice", 
                gzprew_equation, 
                gzprew_startTime])
+        block1.append([gzrep[0]/max(gzrep[0], key=abs),  ##for 3D
+               gzrep.size,
+               "slice", 
+               gzrep_equation, 
+               gyrep_startTime])
     
     blocks = [block1]
 
@@ -551,7 +541,7 @@ def radial(fov, n_spokes, theta, dt, gamp, gslew):
 
 
     # make the various gradient waveforms
-    gamma = 4.2575  # kHz/Gauss
+    gamma = 4.2577  # kHz/Gauss
     g = (1 / (1000 * dt)) / (gamma * fov)  # Gauss/cm
     if g > gamp:
         g = gamp
@@ -604,7 +594,7 @@ def radial(fov, n_spokes, theta, dt, gamp, gslew):
     gyro_startTime = (prew.size+1) * 10e-5
     adc1_startTime = gxro_startTime + (ramp.size + 1) * 10e-5 # 
     gxrew_startTime = gyro_startTime + (ro.size+1) * 10e-5
-    gyrew_startTime = gyro_startTime + (ro.size+1) * 10e-5
+    gyrep_startTime = gyro_startTime + (ro.size+1) * 10e-5
     # gxrep_startTime = gxro_startTime + ( gxro.size * 10e-5 ) 
 
     block1 = [1, 
@@ -642,7 +632,7 @@ def radial(fov, n_spokes, theta, dt, gamp, gslew):
                prew.size,
                "phase", 
                gyprew_equation, 
-               gyrew_startTime]
+               gyrep_startTime]
               ]  
     
     blocks = [block1]
@@ -886,7 +876,7 @@ def mtrk_epi(fov, n, etl, dt, gamp, gslew, offset=0, dirx=-1, diry=1):
 
 
     # make the various gradient waveforms
-    gamma = 4.2575  # kHz/Gauss
+    gamma = 4.2577  # kHz/Gauss
     g = (1 / (1000 * dt)) / (gamma * fov)  # Gauss/cm
     if g > gamp:
         g = gamp

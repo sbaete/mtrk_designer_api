@@ -463,7 +463,7 @@ def extractRFevents(seq, periodicEvents, variableEvents, variableIndexes):
                 rfPhaseOffset = rfFormat[6]
 
                 # Calculating flip angle for SinC RF pulse using area under curve
-                gamma = 42.58 # MHz/T gyromagnetic ratio
+                gamma = 42.577 # MHz/T gyromagnetic ratio
                 rfMagWaveformAmpl = []
                 for value in rfMagWaveform:
                     rfMagWaveformAmpl.append(value * rfAmplitude * 1.35) # TO DO check the 1.35 value, it should be 1.
@@ -510,7 +510,7 @@ def extractRFevents(seq, periodicEvents, variableEvents, variableIndexes):
                 print("timeBwProduct", timeBwProduct)
 
                 # Calculating slice thickness
-                gamma = 42.58 # MHz/T gyromagnetic ratio
+                gamma = 42.577 # MHz/T gyromagnetic ratio
                 sliceThickness = 5.0 # default value in mm
                 if event[0][4] != 0:
                     sliceSelectionGradient = seq.gradLibrary.data[event[0][4]]

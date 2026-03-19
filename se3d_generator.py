@@ -1,5 +1,5 @@
 ################################################################################
-### mtrk project - SDL file generator designing a spin echo 2D sequence      ###
+### mtrk project - SDL file generator designing a spin echo 3d sequence      ###
 ### Version 0.1.1                                                            ###
 ### Anais Artiges and the mtrk project team at NYU - 06/24/2025              ###
 ################################################################################  
@@ -11,9 +11,9 @@ import json
 import jsbeautifier
 import re
 
-def se2d_generator():
+def se3d_generator():
     """
-    Generates a spin echo 2D sequence data object.
+    Generates a spin echo 3d sequence data object.
 
     Args:
 
@@ -45,14 +45,14 @@ def se2d_generator():
 
     ## Information for reconstruction
     sequence_data.infos = Info(
-        description="Spin Echo 2D Sequence",
-        slices=1,
+        description="Spin Echo 3D Sequence",
+        slices=6,
         fov=260,
         dz=5,
-        is3D=False,
+        is3D=True,
         pelines=128,
         seqstring="YARRA",
-        reconstruction="%SiemensIceProgs%\\IceProgram2D")
+        reconstruction="%SiemensIceProgs%\\IceProgram3D")
     
     ### Calculating waveforms
 
@@ -66,11 +66,11 @@ def se2d_generator():
         interleaved_magnitude_and_phase.append(magnitude[i])
         interleaved_magnitude_and_phase.append(phase[i])
 
-    # Generating slice selection gradient
+    # Generating slab selection gradient
     gamma = 42.577e6  # Hz/T
     time_bw_product = 2.7
     BW = time_bw_product/(2560e-6)  # RF bandwidth in Hz
-    dz = sequence_data.infos.dz * 1e-3 # slice thickness in meters
+    dz = sequence_data.infos.slices * sequence_data.infos.dz * 1e-3 # slab thickness in meters
     G_slice = BW / (gamma * dz)  # in T/m
     grad_slisel_amplitude = round(G_slice * 1e3, 2)  # convert to mT/m
 
@@ -344,6 +344,7 @@ def se2d_generator():
     # part of the sequence)
     sequence_data.instructions.update({
         "main":{}, 
+        "block_3DEncoding":{},
         "block_phaseEncoding":{}, 
         "block_TR":{},
         "block_SE":{},
@@ -352,6 +353,10 @@ def se2d_generator():
     sequence_data.instructions["main"] = Instruction(
         print_counter="on",
         print_message="Running main loop",
+        steps=[])
+    sequence_data.instructions["block_3DEncoding"] = Instruction(
+        print_counter="on",
+        print_message="Looping over slices (3D)",
         steps=[])
     sequence_data.instructions["block_phaseEncoding"] = Instruction(
         print_counter="on",
@@ -376,10 +381,19 @@ def se2d_generator():
         range=1,
         steps=[RunBlock(
             action="run_block",
-            block="block_phaseEncoding")])
+            block="block_3DEncoding")])
     sequence_data.instructions["main"].steps.append(main_loop)
-    phase_encoding_loop = Loop(
+    slice_encoding_loop = Loop(
         counter=2,
+        range=sequence_data.infos.slices,
+        steps=[RunBlock(block="block_phaseEncoding")])
+    sl_events = [
+        Init(gradients="logical"),
+        slice_encoding_loop,
+        Submit()]
+    sequence_data.instructions["block_3DEncoding"].steps.extend(sl_events)
+    phase_encoding_loop = Loop(
+        counter=3,
         range=sequence_data.infos.pelines,
         steps=[RunBlock(block="block_TR")])
     pe_events = [
@@ -447,12 +461,12 @@ def se2d_generator():
 
     return sequence_data
 
-se2d = se2d_generator()
+se3d = se3d_generator()
 
 ### writing of json schema to SDL file with formatting options
 ## WARNING - The path needs to be adapted to your local implementation. 
-with open('se2d.mtrk', 'w') as sdlFileOut:
+with open('se3d.mtrk', 'w') as sdlFileOut:
     options = jsbeautifier.default_options()
     options.indent_size = 4
-    data_to_print = jsbeautifier.beautify(json.dumps(se2d.model_dump(mode="json")), options)
+    data_to_print = jsbeautifier.beautify(json.dumps(se3d.model_dump(mode="json")), options)
     sdlFileOut.write(re.sub(r'}, {', '},\n            {', data_to_print)) #purely aesthetic 

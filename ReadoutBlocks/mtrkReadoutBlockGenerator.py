@@ -20,7 +20,7 @@ def add_cartesian_readout(base_sequence, insertion_block, previous_block, next_b
     dt = 1e-5  # hardware dwell time [s]
     gamp = 20 # max gradient amplitude in mT/m
     gslew = 45 # max slew rate in mT/m/ms
-    dirx = -1 # x direction, -1 left to right, 1 right to left # Blocked to -1?
+    dirx = 1 # x direction, -1 left to right, 1 right to left # Blocked to -1?
     diry = -1 # y direction, -1 posterior-anterior, 1 anterior-posterior
     dirz = -1 # z direction, -1 feet-head, 1 head-feet, for 3D
     
@@ -134,8 +134,7 @@ def add_cartesian_readout(base_sequence, insertion_block, previous_block, next_b
                                               equation = equationName)
                 base_sequence.equations.update({equationName : {}})
                 if base_sequence.infos.is3D:
-                    equation = blocks[block_index][index][3].replace("counter3D", "ctr(2)") ## TO DO make counter variable
-                    equation = blocks[block_index][index][3].replace("counterPE", "ctr(3)") ## TO DO make counter variable
+                    equation = blocks[block_index][index][3].replace("counter3D", "ctr(2)").replace("counterPE", "ctr(3)") ## TO DO make counter variable
                 else:
                     equation = blocks[block_index][index][3].replace("counterPE", "ctr(2)") ## TO DO make counter variable
                 base_sequence.equations[equationName].update({"equation" : equation})
