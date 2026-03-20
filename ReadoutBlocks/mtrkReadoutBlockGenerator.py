@@ -133,7 +133,7 @@ def add_cartesian_readout(base_sequence, insertion_block, previous_block, next_b
                 variableAmplitude = EquationRef(type = "equation",
                                               equation = equationName)
                 base_sequence.equations.update({equationName : {}})
-                if base_sequence.infos.is3D:
+                if base_sequence.infos.is3D or ( ( not base_sequence.infos.is3D ) and base_sequence.infos.slices > 1 ):
                     equation = blocks[block_index][index][3].replace("counter3D", "ctr(2)").replace("counterPE", "ctr(3)") ## TO DO make counter variable
                 else:
                     equation = blocks[block_index][index][3].replace("counterPE", "ctr(2)") ## TO DO make counter variable

@@ -364,6 +364,8 @@ def getObjectInformation(typeInfo):
                 print("Default Array information used.")
             print("initial_phase (int)")
             initPhaseInfo = input()
+            print("freq_offset (int)")
+            freqOffsetInfo = input()
             print("thickness (int)")
             thicknessInfo = input()
             print("flipangle (int)")
@@ -371,7 +373,7 @@ def getObjectInformation(typeInfo):
             print("purpose (str)")
             purposeInfo = input()
             objectInformationList.extend([arrayInfo, arrayInformationList, 
-                                          initPhaseInfo, thicknessInfo, 
+                                          initPhaseInfo, freqOffsetInfo, thicknessInfo, 
                                           flipAngleInfo, purposeInfo])
         case "grad":
             print("array (str)")

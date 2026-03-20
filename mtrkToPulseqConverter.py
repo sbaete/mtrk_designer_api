@@ -263,6 +263,7 @@ def extractStepInformation(sequence_data, currentBlock, system,
                 alpha = currentObject.flipangle
                 sliceThickness = currentObject.thickness*1e-3
                 phaseOffset = currentObject.initial_phase
+                freqOffset = currentObject.freq_offset
                 for value_counter in range(0, len(currentArray.data)):
                     if value_counter%2 == 0:
                         rfSignalArray.append(currentArray.data[value_counter])
@@ -282,7 +283,7 @@ def extractStepInformation(sequence_data, currentBlock, system,
                                 bandwidth = rfBandwidth, 
                                 delay = delay*1e-6,
                                 dwell = rfDwellTime*1e-6, 
-                                freq_offset = 0,
+                                freq_offset = freqOffset,
                                 no_signal_scaling = False,
                                 max_grad = 0,
                                 max_slew = 0,
@@ -649,7 +650,7 @@ def buildPulseqSequence(seq, indexList, actionList, stepInfoList, ctrList):
 # print("Pulseq file to create: ")
 # outputFile = input()
 
-fileToConvert = "se3d.mtrk"
-outputFile = "se3d.seq"
+fileToConvert = "se2dms.mtrk"
+outputFile = "se2dms.seq"
 
 mtrkToPulseqConverter(fileToConvert, outputFile)

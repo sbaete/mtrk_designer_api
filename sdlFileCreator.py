@@ -537,7 +537,7 @@ def completeObjectInformation(sequence_data, objectName, objectInformationList):
         match typeInfo:
             case "rf":
                 ## objectInformationList = [typeInfo, durationInfo, arrayInfo, 
-                ##                          arrayInformationList, initPhaseInfo, 
+                ##                          arrayInformationList, initPhaseInfo, freqOffsetInfo
                 ##                          thicknessInfo, flipAngleInfo, 
                 ##                          purposeInfo]
                 arrayInfo = objectInformationList[2]
@@ -549,13 +549,15 @@ def completeObjectInformation(sequence_data, objectName, objectInformationList):
                                          arrayInformationList = \
                                                        objectInformationList[3])
                 initPhaseInfo = objectInformationList[4]
-                thicknessInfo = objectInformationList[5]
-                flipangleInfo = objectInformationList[6]
-                purposeInfo = objectInformationList[7]
+                freqOffsetInfo = objectInformationList[5]
+                thicknessInfo = objectInformationList[6]
+                flipangleInfo = objectInformationList[7]
+                purposeInfo = objectInformationList[8]
                 sequence_data.objects[objectName]=RfExcitation( 
                                                 duration = durationInfo, 
                                                 array = arrayInfo, 
-                                                initial_phase =  initPhaseInfo, 
+                                                initial_phase =  initPhaseInfo,
+                                                freq_offset =  freqOffsetInfo, 
                                                 thickness = thicknessInfo, 
                                                 flipangle = flipangleInfo, 
                                                 purpose = purposeInfo) 

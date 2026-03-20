@@ -526,6 +526,7 @@ def extractRFevents(seq, periodicEvents, variableEvents, variableIndexes):
                 # TO DO correct duration after the orignal file is corrected
                 sdlRfExcitation.duration = len(rfMagWaveform) * 2 * seq.rfRasterTime * 1e6
                 sdlRfExcitation.initial_phase = rfPhaseOffset
+                sdlRfExcitation.freq_offset = rfFrequencyOffset
                 sdlRfExcitation.thickness = sliceThickness
                 # print(seq.timeBwProduct)
 

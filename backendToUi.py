@@ -386,6 +386,17 @@ def getStepInformation(box):
             else:
                 timeInfo = int(float(box["start_time"]))
                 stepInformationList.extend([timeInfo])
+                
+            if box["use_equation_freqoffset"] == True:
+                timeTypeInfo = "equation"
+                timeEquationNameInfo = box["equation_freqoffset_info"]["name"]
+                stepInformationList.extend([timeTypeInfo, 
+                                            timeEquationNameInfo])
+                equationFreqOffsetInfo = box["equation_freqoffset_info"]["expression"]
+                stepInformationList.extend([equationFreqOffsetInfo])
+            else:
+                freqoffsetInfo = int(float(box["freq_offset"]))
+                stepInformationList.extend([freqoffsetInfo])
             addedPhaseTypeInfo = box["rf_added_phase_type"]
             addedPhaseFloatInfo = box["rf_added_phase_float"]
             stepInformationList.extend([addedPhaseTypeInfo, 
@@ -462,12 +473,13 @@ def getObjectInformation(typeInfo, box):
             arrayInfo = box["array_info"]["name"]
             arrayInformationList = getArrayInformation(box = box)
             initPhaseInfo = box["init_phase"]
+            freqOffsetInfo = box["freq_offset"]
             thicknessInfo = box["thickness"]
             flipAngleInfo = box["flip_angle"]
             purposeInfo = box["purpose"]
             objectInformationList.extend([durationInfo, arrayInfo, 
                                           arrayInformationList, 
-                                          initPhaseInfo, thicknessInfo, 
+                                          initPhaseInfo, freqOffsetInfo, thicknessInfo, 
                                           flipAngleInfo, purposeInfo])
             
         case "grad":

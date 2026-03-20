@@ -242,6 +242,7 @@ class RfExcitation(Object):
     array: str = "default_array"
     duration: int = 9999
     initial_phase: int = 9999
+    freq_offset: Union[int, EquationRef] = 0
     thickness: int = 9999
     flipangle: int = 9999
     purpose: str = "default_purpose"
