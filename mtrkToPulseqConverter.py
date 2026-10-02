@@ -263,7 +263,10 @@ def extractStepInformation(sequence_data, currentBlock, system,
                 alpha = currentObject.flipangle
                 sliceThickness = currentObject.thickness*1e-3
                 phaseOffset = currentObject.initial_phase
-                freqOffset = currentObject.freq_offset
+                if hasattr(currentObject,"freq_offset"):
+                    freqOffset = currentObject.freq_offset
+                else:
+                    freqOffset = 0
                 for value_counter in range(0, len(currentArray.data)):
                     if value_counter%2 == 0:
                         rfSignalArray.append(currentArray.data[value_counter])
@@ -644,13 +647,13 @@ def buildPulseqSequence(seq, indexList, actionList, stepInfoList, ctrList):
 ################################################################################
 ## Converting the file from mtrk to Pulseq format using command line for input
 ################################################################################
-# print("Converting mtrk to Pulseq format")
-# print("mtrk file to convert: ")
-# fileToConvert = input()
-# print("Pulseq file to create: ")
-# outputFile = input()
+print("Converting mtrk to Pulseq format")
+print("mtrk file to convert: ")
+fileToConvert = input()
+print("Pulseq file to create: ")
+outputFile = input()
 
-fileToConvert = "se2dms.mtrk"
-outputFile = "se2dms.seq"
+# fileToConvert = "se2dms.mtrk"
+# outputFile = "se2dms.seq"
 
-mtrkToPulseqConverter(fileToConvert, outputFile)
+# mtrkToPulseqConverter(fileToConvert, outputFile)
