@@ -439,6 +439,7 @@ def cartesian(fov, n, dt, gamp, gslew, infos, dirx=-1, diry=1, dirz=1):
     ## Prepare dynamic phase encoding
     gyprew_max_ampl = max(abs(gyprew[0]))
     step = gyprew_max_ampl / n
+
     gyprew_equation = str(diry) + "*(" + str(gyprew_max_ampl) + "-" + str(2*step) +"*counterPE)"
     gyrep_equation = "-1*" + str(diry) + "*(" + str(gyprew_max_ampl) + "-" + str(2*step) +"*counterPE)"
 
@@ -449,7 +450,6 @@ def cartesian(fov, n, dt, gamp, gslew, infos, dirx=-1, diry=1, dirz=1):
         stepz = gzprew_max_ampl / infos.slices # for slabs
         gzprew_equation = str(dirz) + "*(" + str(gzprew_max_ampl) + "-" + str(2*stepz) +"*counter3D)"
         gzrep_equation = "-1*" + str(dirz) + "*(" + str(gzprew_max_ampl) + "-" + str(2*stepz) +"*counter3D)"
-    ##for 3D
     
     # prepare blocks for mtrk
     gxprew_startTime = 0

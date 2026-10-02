@@ -30,4 +30,4 @@ Additionnaly, requirements.txt helps setting the local environment by intalling 
 An example sequence is provided in se2d_generator, py. For more details, a tutorial is available on the main project [page](https://github.com/mtrk-dev).
 
 # Questions?
-You can contact me at anais.artiges@nyulangone.org
+You can contact me at anais.artiges@gmail.org

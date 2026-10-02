@@ -133,6 +133,7 @@ def add_cartesian_readout(base_sequence, insertion_block, previous_block, next_b
                 variableAmplitude = EquationRef(type = "equation",
                                               equation = equationName)
                 base_sequence.equations.update({equationName : {}})
+		print("equation" + blocks[block_index][index][3])
                 if base_sequence.infos.is3D or ( ( not base_sequence.infos.is3D ) and base_sequence.infos.slices > 1 ):
                     equation = blocks[block_index][index][3].replace("counter3D", "ctr(2)").replace("counterPE", "ctr(3)") ## TO DO make counter variable
                 else:
@@ -291,8 +292,8 @@ def add_radial_readout(base_sequence, insertion_block, previous_block, fov, reso
                 variableAmplitude = EquationRef(type = "equation",
                                               equation = equationName)
                 base_sequence.equations.update({equationName : {}})
-                equation = blocks[block_index][index][3].replace("counter2", "ctr(2)") ## TO DO make counter variable
-                equation = blocks[block_index][index][3].replace("counter3", "ctr(3)") ## TO DO make counter variable
+                equation = blocks[block_index][index][3].replace("counter2", "ctr(1)") ## TO DO make counter variable
+                equation = blocks[block_index][index][3].replace("counter3", "ctr(2)") ## TO DO make counter variable
                 base_sequence.equations[equationName].update({"equation" : equation})
                 gradient = GradWithAmplitude(axis = blocks[block_index][index][2], 
                                              object = object_name, 
